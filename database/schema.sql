@@ -1,0 +1,103 @@
+-- =============================================================================
+-- COURSE REGISTRATION SYSTEM - DATABASE SCHEMA
+-- MySQL / MariaDB (XAMPP)
+-- =============================================================================
+
+-- Drop tables if exists (clean setup order honoring foreign keys)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS session_logs;
+DROP TABLE IF EXISTS enrollments;
+DROP TABLE IF EXISTS courses;
+DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- -----------------------------------------------------------------------------
+-- 1. Table: users
+-- Stores both students and administrators with BCrypt-hashed passwords.
+-- -----------------------------------------------------------------------------
+CREATE TABLE users (
+    student_id  VARCHAR(20)  PRIMARY KEY,
+    email       VARCHAR(100) UNIQUE NOT NULL,
+    username    VARCHAR(50)  UNIQUE NOT NULL,
+    password    VARCHAR(255) NOT NULL,
+    full_name   VARCHAR(100) NOT NULL,
+    class_name  VARCHAR(50),
+    role        VARCHAR(20)  NOT NULL DEFAULT 'STUDENT',
+    is_active   TINYINT(1)   NOT NULL DEFAULT 1,
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_users_role CHECK (role IN ('STUDENT', 'ADMIN'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 2. Table: courses
+-- Stores course offerings, schedules, rooms, and slot availability.
+-- Day of week: 2 = Monday, 3 = Tuesday, ..., 7 = Saturday, 8 = Sunday.
+-- Periods: 1 to 10 (morning: 1-5, afternoon: 6-10).
+-- -----------------------------------------------------------------------------
+CREATE TABLE courses (
+    course_id       VARCHAR(30)  PRIMARY KEY,
+    subject_code    VARCHAR(20)  NOT NULL,
+    course_name     VARCHAR(150) NOT NULL,
+    lecturer_name   VARCHAR(100) NOT NULL,
+
+    day_of_week     INT          NOT NULL,
+    start_period    INT          NOT NULL,
+    end_period      INT          NOT NULL,
+
+    room            VARCHAR(50),
+
+    max_slots       INT          NOT NULL,
+    remaining_slots INT          NOT NULL,
+
+    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_courses_day_of_week CHECK (day_of_week BETWEEN 2 AND 8),
+    CONSTRAINT chk_courses_start_period CHECK (start_period BETWEEN 1 AND 10),
+    CONSTRAINT chk_courses_end_period CHECK (end_period BETWEEN start_period AND 10),
+    CONSTRAINT chk_courses_max_slots CHECK (max_slots > 0),
+    CONSTRAINT chk_courses_remaining_slots CHECK (remaining_slots >= 0 AND remaining_slots <= max_slots)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 3. Table: enrollments
+-- Records of course registrations.
+-- RESTRICT on delete prevents orphan enrollments if users/courses are deleted.
+-- UNIQUE(student_id, course_id) prevents registering the same course twice.
+-- -----------------------------------------------------------------------------
+CREATE TABLE enrollments (
+    enrollment_id   BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id      VARCHAR(20) NOT NULL,
+    course_id       VARCHAR(30) NOT NULL,
+    registered_at   TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_student_course UNIQUE (student_id, course_id),
+    CONSTRAINT fk_enrollment_student FOREIGN KEY (student_id) REFERENCES users(student_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_enrollment_course FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 4. Table: session_logs
+-- Audit log of client connections and authentication sessions.
+-- -----------------------------------------------------------------------------
+CREATE TABLE session_logs (
+    session_id      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id      VARCHAR(20),
+    client_ip       VARCHAR(45),
+    client_port     INT,
+    login_time      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    logout_time     TIMESTAMP   NULL,
+    status          VARCHAR(20) NOT NULL DEFAULT 'ONLINE',
+
+    CONSTRAINT fk_session_student FOREIGN KEY (student_id) REFERENCES users(student_id) ON DELETE SET NULL,
+    CONSTRAINT chk_session_status CHECK (status IN ('ONLINE', 'LOGOUT', 'KICKED', 'DISCONNECTED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- 5. Performance Indexes
+-- -----------------------------------------------------------------------------
+CREATE INDEX idx_enrollments_student  ON enrollments(student_id);
+CREATE INDEX idx_enrollments_course   ON enrollments(course_id);
+CREATE INDEX idx_courses_subject      ON courses(subject_code);
+CREATE INDEX idx_courses_schedule     ON courses(day_of_week, start_period, end_period);
+CREATE INDEX idx_session_logs_student ON session_logs(student_id);
