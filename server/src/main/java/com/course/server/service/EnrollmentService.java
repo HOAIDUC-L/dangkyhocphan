@@ -117,12 +117,21 @@ public class EnrollmentService implements ProtocolHandler.EnrollmentDelegate {
                 }
             }
 
-            // 6. Check remaining slots > 0
+            // 6. Check credit limit (Maximum 24 credits per semester)
+            int currentCredits = enrolledCourses.stream().mapToInt(Course::getCredits).sum();
+            if (currentCredits + course.getCredits() > 24) {
+                throw new CreditLimitExceededException(String.format(
+                        "Vượt quá giới hạn 24 tín chỉ tối đa trong học kỳ (Hiện có: %d TC, học phần đăng ký: %d TC, tổng: %d TC).",
+                        currentCredits, course.getCredits(), currentCredits + course.getCredits()
+                ));
+            }
+
+            // 7. Check remaining slots > 0
             if (course.getRemainingSlots() <= 0) {
                 throw new CourseFullException("Lớp học phần " + courseId + " đã hết chỗ đăng ký.");
             }
 
-            // 7. Deduct remaining slot
+            // 8. Deduct remaining slot
             int updatedSlots = course.getRemainingSlots() - 1;
             boolean slotUpdated = courseRepository.updateRemainingSlots(conn, courseId, updatedSlots);
             if (!slotUpdated) {

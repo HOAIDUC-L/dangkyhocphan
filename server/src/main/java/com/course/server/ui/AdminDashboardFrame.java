@@ -1,5 +1,6 @@
 package com.course.server.ui;
 
+import com.course.common.dto.AnnouncementDto;
 import com.course.common.dto.BlockUserRequestDto;
 import com.course.common.dto.ClientSessionDto;
 import com.course.common.protocol.Response;
@@ -36,10 +37,11 @@ public class AdminDashboardFrame extends JFrame {
     private static final Font FONT_REGULAR = new Font("Segoe UI", Font.PLAIN, 12);
     private static final Font FONT_MONO = new Font("Consolas", Font.PLAIN, 12);
 
-    private static final Color COLOR_PRIMARY = new Color(24, 119, 242);
-    private static final Color COLOR_SUCCESS = new Color(46, 125, 50);
-    private static final Color COLOR_DANGER = new Color(220, 53, 69);
-    private static final Color COLOR_WARNING = new Color(239, 108, 0);
+    private static final Color COLOR_PRIMARY = new Color(15, 43, 92);   // Deep Navy (#0F2B5C)
+    private static final Color COLOR_ACCENT = new Color(37, 99, 235);   // Accent Blue (#2563EB)
+    private static final Color COLOR_SUCCESS = new Color(16, 185, 129); // Modern Green (#10B981)
+    private static final Color COLOR_DANGER = new Color(239, 68, 68);   // Modern Red (#EF4444)
+    private static final Color COLOR_WARNING = new Color(217, 119, 6);  // Modern Amber (#D97706)
 
     // Server components
     private TcpServer tcpServer;
@@ -298,6 +300,13 @@ public class AdminDashboardFrame extends JFrame {
         btnUnblockAccount.addActionListener(e -> handleBlockAccount(false));
         accountPanel.add(btnUnblockAccount);
 
+        JButton btnOpenBroadcast = new JButton("📢 PHÁT THÔNG BÁO TOÀN TRƯỜNG");
+        btnOpenBroadcast.setFont(FONT_TITLE);
+        btnOpenBroadcast.setBackground(COLOR_ACCENT);
+        btnOpenBroadcast.setForeground(Color.WHITE);
+        btnOpenBroadcast.addActionListener(e -> openBroadcastDialog());
+        accountPanel.add(btnOpenBroadcast);
+
         panel.add(accountPanel, BorderLayout.NORTH);
 
         // Console Log Viewer
@@ -518,6 +527,137 @@ public class AdminDashboardFrame extends JFrame {
             }
         };
         worker.execute();
+    }
+
+    private void openBroadcastDialog() {
+        JDialog dialog = new JDialog(this, "📢 Phát Thông Báo Toàn Trường (Dual-Server Cluster Broadcast)", true);
+        dialog.setSize(540, 420);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(6, 6, 6, 6);
+
+        // Row 0: Sender
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.3;
+        JLabel lblSender = new JLabel("Cơ quan phát:");
+        lblSender.setFont(FONT_TITLE);
+        formPanel.add(lblSender, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 0.7;
+        JTextField txtSender = new JTextField("Ban Đào Tạo - Học Viện");
+        txtSender.setFont(FONT_REGULAR);
+        formPanel.add(txtSender, gbc);
+
+        // Row 1: Level
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.3;
+        JLabel lblLevel = new JLabel("Mức độ thông báo:");
+        lblLevel.setFont(FONT_TITLE);
+        formPanel.add(lblLevel, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 0.7;
+        JComboBox<String> cbLevel = new JComboBox<>(new String[]{
+                "INFO - Tin tức / Nhắc nhở",
+                "WARNING - Lưu ý quan trọng",
+                "URGENT - Khẩn cấp / Thay đổi lịch"
+        });
+        cbLevel.setFont(FONT_REGULAR);
+        formPanel.add(cbLevel, gbc);
+
+        // Row 2: Title
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.3;
+        JLabel lblTitle = new JLabel("Tiêu đề thông báo:");
+        lblTitle.setFont(FONT_TITLE);
+        formPanel.add(lblTitle, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 0.7;
+        JTextField txtTitle = new JTextField();
+        txtTitle.setFont(FONT_REGULAR);
+        formPanel.add(txtTitle, gbc);
+
+        // Row 3: Content
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.3;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        JLabel lblContent = new JLabel("Nội dung thông báo:");
+        lblContent.setFont(FONT_TITLE);
+        formPanel.add(lblContent, gbc);
+
+        gbc.gridx = 1; gbc.weightx = 0.7; gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        JTextArea txtContent = new JTextArea(5, 25);
+        txtContent.setFont(FONT_REGULAR);
+        txtContent.setLineWrap(true);
+        txtContent.setWrapStyleWord(true);
+        formPanel.add(new JScrollPane(txtContent), gbc);
+
+        dialog.add(formPanel, BorderLayout.CENTER);
+
+        // Bottom Actions
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
+        JButton btnCancel = new JButton("Hủy bỏ");
+        btnCancel.setFont(FONT_REGULAR);
+        btnCancel.addActionListener(e -> dialog.dispose());
+        btnPanel.add(btnCancel);
+
+        JButton btnSend = new JButton("PHÁT THÔNG BÁO TỚI TẤT CẢ SERVER NODES");
+        btnSend.setFont(FONT_TITLE);
+        btnSend.setBackground(COLOR_ACCENT);
+        btnSend.setForeground(Color.WHITE);
+        btnSend.addActionListener(e -> {
+            String title = txtTitle.getText().trim();
+            String content = txtContent.getText().trim();
+            String sender = txtSender.getText().trim();
+            String levelStr = "INFO";
+            if (cbLevel.getSelectedIndex() == 1) levelStr = "WARNING";
+            else if (cbLevel.getSelectedIndex() == 2) levelStr = "URGENT";
+
+            if (title.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập tiêu đề thông báo.", "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (content.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Vui lòng nhập nội dung thông báo.", "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            AnnouncementDto dto = new AnnouncementDto(title, content, sender, levelStr);
+            btnSend.setEnabled(false);
+
+            SwingWorker<Response, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Response doInBackground() {
+                    return ServerContext.getInstance().getAdminService().broadcastAnnouncement(dto, null);
+                }
+
+                @Override
+                protected void done() {
+                    btnSend.setEnabled(true);
+                    try {
+                        Response res = get();
+                        if (res != null && res.isSuccess()) {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "Đã phát thông báo thành công tới tất cả các Server Nodes trong cụm cluster!",
+                                    "Phát thành công", JOptionPane.INFORMATION_MESSAGE);
+                            dialog.dispose();
+                        } else {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "Lỗi khi phát thông báo: " + (res != null ? res.getMessage() : "Unknown"),
+                                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(dialog, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
+            worker.execute();
+        });
+        btnPanel.add(btnSend);
+
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+        dialog.setVisible(true);
     }
 
     private void handleExit() {

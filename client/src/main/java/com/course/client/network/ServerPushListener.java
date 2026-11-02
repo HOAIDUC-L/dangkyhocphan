@@ -21,6 +21,12 @@ public interface ServerPushListener {
     void onDisconnected(String reason);
 
     /**
+     * Triggered when an emergency or administrative announcement is broadcast from the server.
+     */
+    default void onAnnouncement(com.course.common.dto.AnnouncementDto announcement) {
+    }
+
+    /**
      * Triggered when the socket successfully connects to the server.
      */
     default void onConnected() {

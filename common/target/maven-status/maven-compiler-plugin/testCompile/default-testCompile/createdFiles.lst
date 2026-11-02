@@ -1,2 +1,3 @@
+com/course/common/dto/AnnouncementSerializationTest.class
 com/course/common/protocol/ProtocolJsonSerializationTest.class
 com/course/common/model/CourseConflictTest.class

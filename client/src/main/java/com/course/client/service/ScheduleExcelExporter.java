@@ -136,7 +136,7 @@ public class ScheduleExcelExporter {
             Cell titleCell2 = titleRow2.createCell(0);
             titleCell2.setCellValue("DANH SÁCH HỌC PHẦN ĐÃ ĐĂNG KÝ");
             titleCell2.setCellStyle(titleStyle);
-            sheet2.addMergedRegion(new CellRangeAddress(0, 0, 0, 7));
+            sheet2.addMergedRegion(new CellRangeAddress(0, 0, 0, 8));
 
             // Row 1: Subtitle
             Row infoRow2 = sheet2.createRow(1);
@@ -144,7 +144,7 @@ public class ScheduleExcelExporter {
             Cell infoCell2 = infoRow2.createCell(0);
             infoCell2.setCellValue(infoText);
             infoCell2.setCellStyle(subtitleStyle);
-            sheet2.addMergedRegion(new CellRangeAddress(1, 1, 0, 7));
+            sheet2.addMergedRegion(new CellRangeAddress(1, 1, 0, 8));
 
             // Row 2: Spacer
             sheet2.createRow(2).setHeightInPoints(8);
@@ -153,7 +153,7 @@ public class ScheduleExcelExporter {
             Row headerRow2 = sheet2.createRow(3);
             headerRow2.setHeightInPoints(26);
             String[] listHeaders = {
-                    "STT", "Mã Lớp HP", "Mã Môn", "Tên Học Phần",
+                    "STT", "Mã Lớp HP", "Mã Môn", "Tên Học Phần", "Số TC",
                     "Giảng Viên", "Lịch Học", "Phòng Học", "Ngày Đăng Ký"
             };
             for (int i = 0; i < listHeaders.length; i++) {
@@ -164,10 +164,12 @@ public class ScheduleExcelExporter {
 
             // Rows 4+: Registered courses list
             DateTimeFormatter regFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            int totalCredits = 0;
             if (enrollments != null && !enrollments.isEmpty()) {
                 int stt = 1;
                 int rowIdx = 4;
                 for (EnrollmentDetailDto item : enrollments) {
+                    totalCredits += item.getCredits();
                     Row r = sheet2.createRow(rowIdx++);
                     r.setHeightInPoints(22);
 
@@ -188,21 +190,42 @@ public class ScheduleExcelExporter {
                     c3.setCellStyle(cellStyle);
 
                     Cell c4 = r.createCell(4);
-                    c4.setCellValue(item.getLecturerName());
-                    c4.setCellStyle(cellStyle);
+                    c4.setCellValue(item.getCredits());
+                    c4.setCellStyle(centerStyle);
 
                     Cell c5 = r.createCell(5);
-                    c5.setCellValue(item.getScheduleDisplay());
-                    c5.setCellStyle(centerStyle);
+                    c5.setCellValue(item.getLecturerName());
+                    c5.setCellStyle(cellStyle);
 
                     Cell c6 = r.createCell(6);
-                    c6.setCellValue(item.getRoom());
+                    c6.setCellValue(item.getScheduleDisplay());
                     c6.setCellStyle(centerStyle);
 
                     Cell c7 = r.createCell(7);
-                    c7.setCellValue(item.getRegisteredAt() != null ? item.getRegisteredAt().format(regFormatter) : "N/A");
+                    c7.setCellValue(item.getRoom());
                     c7.setCellStyle(centerStyle);
+
+                    Cell c8 = r.createCell(8);
+                    c8.setCellValue(item.getRegisteredAt() != null ? item.getRegisteredAt().format(regFormatter) : "N/A");
+                    c8.setCellStyle(centerStyle);
                 }
+
+                // Summary Row
+                Row sumRow = sheet2.createRow(rowIdx);
+                sumRow.setHeightInPoints(24);
+                Cell sumLabel = sumRow.createCell(0);
+                sumLabel.setCellValue("TỔNG CỘNG:");
+                sumLabel.setCellStyle(headerStyle);
+                sheet2.addMergedRegion(new CellRangeAddress(rowIdx, rowIdx, 0, 3));
+
+                Cell sumCredits = sumRow.createCell(4);
+                sumCredits.setCellValue(totalCredits + " TC");
+                sumCredits.setCellStyle(headerStyle);
+
+                Cell sumNote = sumRow.createCell(5);
+                sumNote.setCellValue(totalCredits >= 12 ? "Hợp lệ (12 - 24 TC)" : "Chưa đủ 12 TC tối thiểu");
+                sumNote.setCellStyle(headerStyle);
+                sheet2.addMergedRegion(new CellRangeAddress(rowIdx, rowIdx, 5, 8));
             }
 
             // Auto-size columns for Sheet 2

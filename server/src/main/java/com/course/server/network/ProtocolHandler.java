@@ -38,6 +38,7 @@ public class ProtocolHandler {
     public interface AdminDelegate {
         Response blockUser(BlockUserRequestDto req, String requestId);
         Response getServerStatus(String requestId);
+        Response broadcastAnnouncement(AnnouncementDto req, String requestId);
     }
 
     private AuthDelegate authDelegate;
@@ -137,7 +138,8 @@ public class ProtocolHandler {
                action == Action.KICK_CLIENT ||
                action == Action.BLOCK_USER ||
                action == Action.UNBLOCK_USER ||
-               action == Action.SERVER_STATUS;
+               action == Action.SERVER_STATUS ||
+               action == Action.ADMIN_BROADCAST_ANNOUNCEMENT;
     }
 
     private Response handleAdminAction(ClientSession session, Action action, String reqId, Request request) {
@@ -175,6 +177,16 @@ public class ProtocolHandler {
                     return adminDelegate.getServerStatus(reqId);
                 }
                 return Response.error(Action.SERVER_STATUS_RESPONSE, reqId, ErrorCode.SERVER_ERROR, "Dịch vụ chưa sẵn sàng.");
+
+            case ADMIN_BROADCAST_ANNOUNCEMENT:
+                AnnouncementDto announceDto = request.getDataAs(AnnouncementDto.class);
+                if (announceDto == null) {
+                    return Response.error(Action.ADMIN_BROADCAST_ANNOUNCEMENT_RESPONSE, reqId, ErrorCode.INVALID_REQUEST, "Thiếu dữ liệu thông báo.");
+                }
+                if (adminDelegate != null) {
+                    return adminDelegate.broadcastAnnouncement(announceDto, reqId);
+                }
+                return Response.error(Action.ADMIN_BROADCAST_ANNOUNCEMENT_RESPONSE, reqId, ErrorCode.SERVER_ERROR, "Dịch vụ quản trị chưa sẵn sàng.");
 
             default:
                 return Response.error(action, reqId, ErrorCode.INVALID_REQUEST, "Hành động quản trị không được hỗ trợ.");

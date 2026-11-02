@@ -23,6 +23,7 @@ com/course/client/network/ServerPushListener.class
 com/course/client/ui/MyEnrollmentsPanel$1.class
 com/course/client/ui/MainFrame.class
 com/course/client/ui/CoursePanel.class
+com/course/client/ui/ScheduleMatrixPanel$ScheduleCellData.class
 com/course/client/ui/LoginFrame.class
 com/course/client/ui/MyEnrollmentsPanel.class
 com/course/client/ClientApplication.class

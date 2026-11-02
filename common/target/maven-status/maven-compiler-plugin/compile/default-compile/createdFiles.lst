@@ -21,3 +21,4 @@ com/course/common/dto/SearchCourseRequestDto.class
 com/course/common/util/JsonUtil.class
 com/course/common/dto/CancelCourseRequestDto.class
 com/course/common/dto/EnrollmentDetailDto.class
+com/course/common/dto/AnnouncementDto.class

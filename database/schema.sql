@@ -49,6 +49,7 @@ CREATE TABLE courses (
 
     max_slots       INT          NOT NULL,
     remaining_slots INT          NOT NULL,
+    credits         INT          NOT NULL DEFAULT 3,
 
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
@@ -56,7 +57,8 @@ CREATE TABLE courses (
     CONSTRAINT chk_courses_start_period CHECK (start_period BETWEEN 1 AND 10),
     CONSTRAINT chk_courses_end_period CHECK (end_period BETWEEN start_period AND 10),
     CONSTRAINT chk_courses_max_slots CHECK (max_slots > 0),
-    CONSTRAINT chk_courses_remaining_slots CHECK (remaining_slots >= 0 AND remaining_slots <= max_slots)
+    CONSTRAINT chk_courses_remaining_slots CHECK (remaining_slots >= 0 AND remaining_slots <= max_slots),
+    CONSTRAINT chk_courses_credits CHECK (credits > 0 AND credits <= 10)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------

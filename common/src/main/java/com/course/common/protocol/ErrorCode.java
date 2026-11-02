@@ -16,6 +16,7 @@ public enum ErrorCode {
     DUPLICATE_SUBJECT("Bạn đã đăng ký một lớp học phần khác cùng môn học này"),
     SCHEDULE_CONFLICT("Trùng lịch học với môn học đã đăng ký trong thời khóa biểu"),
     ENROLLMENT_NOT_FOUND("Không tìm thấy thông tin đăng ký học phần để hủy"),
+    CREDIT_LIMIT_EXCEEDED("Vượt quá giới hạn 24 tín chỉ tối đa cho phép trong một học kỳ"),
     SERVER_ERROR("Lỗi xử lý nội bộ phía máy chủ"),
     DATABASE_ERROR("Lỗi cơ sở dữ liệu");
 

@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 public class PostgresNotificationListener {
     private static final Logger LOGGER = Logger.getLogger(PostgresNotificationListener.class.getName());
     public static final String CHANNEL_NAME = "course_channel";
+    public static final String ANNOUNCEMENT_CHANNEL = "announcement_channel";
 
     private static final PostgresNotificationListener INSTANCE = new PostgresNotificationListener();
 
@@ -68,8 +69,8 @@ public class PostgresNotificationListener {
 
     private void listenLoop() {
         ServerConfig config = ServerConfig.getInstance();
-        LOGGER.info(String.format("[%s] Starting PostgresNotificationListener on channel '%s'...",
-                config.getNodeName(), CHANNEL_NAME));
+        LOGGER.info(String.format("[%s] Starting PostgresNotificationListener on channels '%s', '%s'...",
+                config.getNodeName(), CHANNEL_NAME, ANNOUNCEMENT_CHANNEL));
 
         while (running) {
             try {
@@ -85,7 +86,9 @@ public class PostgresNotificationListener {
                     if (notifications != null && notifications.length > 0) {
                         for (PGNotification notification : notifications) {
                             if (CHANNEL_NAME.equalsIgnoreCase(notification.getName())) {
-                                handleNotificationPayload(notification.getParameter());
+                                handleCourseNotificationPayload(notification.getParameter());
+                            } else if (ANNOUNCEMENT_CHANNEL.equalsIgnoreCase(notification.getName())) {
+                                handleAnnouncementPayload(notification.getParameter());
                             }
                         }
                     }
@@ -119,18 +122,18 @@ public class PostgresNotificationListener {
             );
 
             try (Statement stmt = dbConnection.createStatement()) {
-                stmt.execute("LISTEN " + CHANNEL_NAME);
+                stmt.execute("LISTEN " + CHANNEL_NAME + "; LISTEN " + ANNOUNCEMENT_CHANNEL + ";");
             }
             this.listening = true;
-            LOGGER.info(String.format("[%s] Successfully listening on PostgreSQL channel '%s'. Real-time cluster sync ACTIVE.",
-                    config.getNodeName(), CHANNEL_NAME));
+            LOGGER.info(String.format("[%s] Successfully listening on PostgreSQL channels '%s' and '%s'. Real-time cluster sync ACTIVE.",
+                    config.getNodeName(), CHANNEL_NAME, ANNOUNCEMENT_CHANNEL));
         } catch (SQLException e) {
             this.listening = false;
             throw e;
         }
     }
 
-    private void handleNotificationPayload(String payload) {
+    private void handleCourseNotificationPayload(String payload) {
         if (payload == null || payload.isBlank()) {
             return;
         }
@@ -144,6 +147,23 @@ public class PostgresNotificationListener {
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to parse PG notification payload: " + payload, e);
+        }
+    }
+
+    private void handleAnnouncementPayload(String payload) {
+        if (payload == null || payload.isBlank()) {
+            return;
+        }
+
+        try {
+            com.course.common.dto.AnnouncementDto dto = JsonUtil.fromJson(payload, com.course.common.dto.AnnouncementDto.class);
+            if (dto != null) {
+                LOGGER.info(String.format("[%s] Received PG NOTIFY '%s': [%s] %s. Broadcasting to local clients.",
+                        ServerConfig.getInstance().getNodeName(), ANNOUNCEMENT_CHANNEL, dto.getLevel(), dto.getTitle()));
+                BroadcastService.getInstance().notifyAnnouncementLocal(dto);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to parse PG announcement payload: " + payload, e);
         }
     }
 

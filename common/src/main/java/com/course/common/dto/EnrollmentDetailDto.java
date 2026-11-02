@@ -23,6 +23,7 @@ public class EnrollmentDetailDto implements Serializable {
     private int startPeriod;
     private int endPeriod;
     private String room;
+    private int credits = 3;
     private LocalDateTime registeredAt;
 
     public EnrollmentDetailDto() {
@@ -31,6 +32,12 @@ public class EnrollmentDetailDto implements Serializable {
     public EnrollmentDetailDto(Long enrollmentId, String studentId, String courseId, String subjectCode,
                                String courseName, String lecturerName, int dayOfWeek,
                                int startPeriod, int endPeriod, String room, LocalDateTime registeredAt) {
+        this(enrollmentId, studentId, courseId, subjectCode, courseName, lecturerName, dayOfWeek, startPeriod, endPeriod, room, 3, registeredAt);
+    }
+
+    public EnrollmentDetailDto(Long enrollmentId, String studentId, String courseId, String subjectCode,
+                               String courseName, String lecturerName, int dayOfWeek,
+                               int startPeriod, int endPeriod, String room, int credits, LocalDateTime registeredAt) {
         this.enrollmentId = enrollmentId;
         this.studentId = studentId;
         this.courseId = courseId;
@@ -41,6 +48,7 @@ public class EnrollmentDetailDto implements Serializable {
         this.startPeriod = startPeriod;
         this.endPeriod = endPeriod;
         this.room = room;
+        this.credits = credits;
         this.registeredAt = registeredAt;
     }
 
@@ -126,6 +134,14 @@ public class EnrollmentDetailDto implements Serializable {
 
     public void setRoom(String room) {
         this.room = room;
+    }
+
+    public int getCredits() {
+        return credits;
+    }
+
+    public void setCredits(int credits) {
+        this.credits = credits;
     }
 
     public LocalDateTime getRegisteredAt() {

@@ -24,6 +24,7 @@ public class Course implements Serializable {
     private String room;
     private int maxSlots;
     private int remainingSlots;
+    private int credits = 3;
     private LocalDateTime createdAt;
 
     public Course() {
@@ -32,6 +33,12 @@ public class Course implements Serializable {
     public Course(String courseId, String subjectCode, String courseName, String lecturerName,
                   int dayOfWeek, int startPeriod, int endPeriod, String room,
                   int maxSlots, int remainingSlots, LocalDateTime createdAt) {
+        this(courseId, subjectCode, courseName, lecturerName, dayOfWeek, startPeriod, endPeriod, room, maxSlots, remainingSlots, 3, createdAt);
+    }
+
+    public Course(String courseId, String subjectCode, String courseName, String lecturerName,
+                  int dayOfWeek, int startPeriod, int endPeriod, String room,
+                  int maxSlots, int remainingSlots, int credits, LocalDateTime createdAt) {
         this.courseId = courseId;
         this.subjectCode = subjectCode;
         this.courseName = courseName;
@@ -42,6 +49,7 @@ public class Course implements Serializable {
         this.room = room;
         this.maxSlots = maxSlots;
         this.remainingSlots = remainingSlots;
+        this.credits = credits;
         this.createdAt = createdAt;
     }
 
@@ -143,6 +151,14 @@ public class Course implements Serializable {
         this.remainingSlots = remainingSlots;
     }
 
+    public int getCredits() {
+        return credits;
+    }
+
+    public void setCredits(int credits) {
+        this.credits = credits;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -157,6 +173,7 @@ public class Course implements Serializable {
                 "courseId='" + courseId + '\'' +
                 ", subjectCode='" + subjectCode + '\'' +
                 ", courseName='" + courseName + '\'' +
+                ", credits=" + credits +
                 ", day=" + dayOfWeek +
                 ", periods=" + startPeriod + "-" + endPeriod +
                 ", remaining=" + remainingSlots + "/" + maxSlots +

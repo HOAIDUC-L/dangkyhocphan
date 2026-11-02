@@ -1,6 +1,8 @@
+com/course/server/SimpleTestRunner.class
 com/course/server/service/ConcurrencyRaceConditionTest.class
 com/course/server/security/BCryptPasswordTest.class
+com/course/server/service/CreditLimitValidationTest$CreditValidationSimulator.class
 com/course/server/session/SingleSessionPolicyTest.class
-com/course/server/SimpleTestRunner.class
+com/course/server/service/CreditLimitValidationTest.class
 com/course/server/service/ConcurrencyRaceConditionTest$SimulatedDatabaseCourse.class
 com/course/server/session/ClientDisconnectRetentionIntegrationTest.class

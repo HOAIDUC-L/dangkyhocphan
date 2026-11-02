@@ -7,6 +7,7 @@
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/model/Course.java
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/dto/BlockUserRequestDto.java
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/dto/CourseUpdatedPushDto.java
+/home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/dto/AnnouncementDto.java
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/dto/RegisterCourseRequestDto.java
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/dto/LoginResponseDto.java
 /home/hduc/Documents/GiuaKyM-main/common/src/main/java/com/course/common/protocol/Request.java

@@ -114,4 +114,8 @@ public class ClientState {
             l.onEnrollmentsUpdated(this.cachedEnrollments);
         }
     }
+
+    public int getTotalEnrolledCredits() {
+        return cachedEnrollments.stream().mapToInt(EnrollmentDetailDto::getCredits).sum();
+    }
 }

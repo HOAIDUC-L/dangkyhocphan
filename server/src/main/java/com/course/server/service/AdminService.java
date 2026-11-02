@@ -1,17 +1,23 @@
 package com.course.server.service;
 
+import com.course.common.dto.AnnouncementDto;
 import com.course.common.dto.BlockUserRequestDto;
 import com.course.common.dto.ServerStatusDto;
 import com.course.common.model.User;
 import com.course.common.protocol.Action;
 import com.course.common.protocol.ErrorCode;
 import com.course.common.protocol.Response;
+import com.course.common.util.JsonUtil;
 import com.course.server.config.ServerConfig;
+import com.course.server.database.DatabaseManager;
+import com.course.server.network.PostgresNotificationListener;
 import com.course.server.network.ProtocolHandler;
 import com.course.server.network.TcpServer;
 import com.course.server.repository.UserRepository;
 import com.course.server.session.SessionManager;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -92,6 +98,36 @@ public class AdminService implements ProtocolHandler.AdminDelegate {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to get server status", e);
             return Response.error(Action.SERVER_STATUS_RESPONSE, requestId, ErrorCode.SERVER_ERROR, "Không thể lấy trạng thái máy chủ.");
+        }
+    }
+
+    @Override
+    public Response broadcastAnnouncement(AnnouncementDto dto, String requestId) {
+        if (dto == null || dto.getTitle() == null || dto.getTitle().isBlank()) {
+            return Response.error(Action.ADMIN_BROADCAST_ANNOUNCEMENT_RESPONSE, requestId,
+                    ErrorCode.INVALID_REQUEST, "Tiêu đề thông báo không được để trống.");
+        }
+
+        try {
+            String payload = JsonUtil.toJson(dto);
+            // 1. Notify PostgreSQL cluster on announcement_channel
+            try (Connection conn = DatabaseManager.getInstance().getConnection();
+                 PreparedStatement ps = conn.prepareStatement("SELECT pg_notify('announcement_channel', ?)")) {
+                ps.setString(1, payload);
+                ps.execute();
+            }
+
+            // 2. Fallback local broadcast if Postgres listener is not active
+            if (!PostgresNotificationListener.getInstance().isListening()) {
+                BroadcastService.getInstance().notifyAnnouncementLocal(dto);
+            }
+
+            LOGGER.info(String.format("Admin successfully broadcasted announcement: [%s] %s", dto.getLevel(), dto.getTitle()));
+            return Response.success(Action.ADMIN_BROADCAST_ANNOUNCEMENT_RESPONSE, requestId, "Phát thông báo toàn trường thành công.");
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error executing pg_notify for announcement, falling back to local broadcast", e);
+            BroadcastService.getInstance().notifyAnnouncementLocal(dto);
+            return Response.success(Action.ADMIN_BROADCAST_ANNOUNCEMENT_RESPONSE, requestId, "Đã phát thông báo trên máy chủ hiện tại.");
         }
     }
 }

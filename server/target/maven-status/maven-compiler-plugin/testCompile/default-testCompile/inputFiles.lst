@@ -1,3 +1,4 @@
+/home/hduc/Documents/GiuaKyM-main/server/src/test/java/com/course/server/service/CreditLimitValidationTest.java
 /home/hduc/Documents/GiuaKyM-main/server/src/test/java/com/course/server/session/SingleSessionPolicyTest.java
 /home/hduc/Documents/GiuaKyM-main/server/src/test/java/com/course/server/security/BCryptPasswordTest.java
 /home/hduc/Documents/GiuaKyM-main/server/src/test/java/com/course/server/SimpleTestRunner.java

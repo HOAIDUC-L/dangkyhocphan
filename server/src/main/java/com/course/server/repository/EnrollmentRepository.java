@@ -33,7 +33,7 @@ public class EnrollmentRepository {
     public List<EnrollmentDetailDto> findByStudentId(String studentId) {
         String sql = "SELECT e.enrollment_id, e.student_id, e.course_id, e.registered_at, " +
                      "c.subject_code, c.course_name, c.lecturer_name, c.day_of_week, " +
-                     "c.start_period, c.end_period, c.room " +
+                     "c.start_period, c.end_period, c.room, c.credits " +
                      "FROM enrollments e " +
                      "JOIN courses c ON e.course_id = c.course_id " +
                      "WHERE e.student_id = ? " +
@@ -46,6 +46,13 @@ public class EnrollmentRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Timestamp ts = rs.getTimestamp("registered_at");
+                    int credits = 3;
+                    try {
+                        credits = rs.getInt("credits");
+                        if (credits <= 0) credits = 3;
+                    } catch (SQLException ignored) {
+                        credits = 3;
+                    }
                     list.add(new EnrollmentDetailDto(
                             rs.getLong("enrollment_id"),
                             rs.getString("student_id"),
@@ -57,6 +64,7 @@ public class EnrollmentRepository {
                             rs.getInt("start_period"),
                             rs.getInt("end_period"),
                             rs.getString("room"),
+                            credits,
                             ts != null ? ts.toLocalDateTime() : null
                     ));
                 }
@@ -103,7 +111,7 @@ public class EnrollmentRepository {
      */
     public List<Course> getEnrolledCourses(Connection conn, String studentId) throws SQLException {
         String sql = "SELECT c.course_id, c.subject_code, c.course_name, c.lecturer_name, " +
-                     "c.day_of_week, c.start_period, c.end_period, c.room, c.max_slots, c.remaining_slots, c.created_at " +
+                     "c.day_of_week, c.start_period, c.end_period, c.room, c.max_slots, c.remaining_slots, c.credits, c.created_at " +
                      "FROM enrollments e " +
                      "JOIN courses c ON e.course_id = c.course_id " +
                      "WHERE e.student_id = ?";
@@ -113,6 +121,13 @@ public class EnrollmentRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Timestamp ts = rs.getTimestamp("created_at");
+                    int credits = 3;
+                    try {
+                        credits = rs.getInt("credits");
+                        if (credits <= 0) credits = 3;
+                    } catch (SQLException ignored) {
+                        credits = 3;
+                    }
                     list.add(new Course(
                             rs.getString("course_id"),
                             rs.getString("subject_code"),
@@ -124,6 +139,7 @@ public class EnrollmentRepository {
                             rs.getString("room"),
                             rs.getInt("max_slots"),
                             rs.getInt("remaining_slots"),
+                            credits,
                             ts != null ? ts.toLocalDateTime() : null
                     ));
                 }

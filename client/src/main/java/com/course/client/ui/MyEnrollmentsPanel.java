@@ -27,6 +27,7 @@ public class MyEnrollmentsPanel extends JPanel {
     private final JButton btnCancel;
     private final JButton btnExportExcel;
     private final JButton btnRefresh;
+    private final JLabel lblSummaryFooter;
 
     private final List<EnrollmentDetailDto> currentEnrollments = new ArrayList<>();
     private final Runnable onEnrollmentChanged;
@@ -57,7 +58,7 @@ public class MyEnrollmentsPanel extends JPanel {
 
         // 2. Table
         String[] columnNames = {
-                "Mã lớp HP", "Mã môn", "Tên học phần", "Giảng viên",
+                "Mã lớp HP", "Mã môn", "Tên học phần", "Số TC", "Giảng viên",
                 "Lịch học", "Phòng", "Thời gian đăng ký"
         };
 
@@ -69,7 +70,7 @@ public class MyEnrollmentsPanel extends JPanel {
         };
 
         tableEnrollments = new JTable(tableModel);
-        tableEnrollments.setRowHeight(28);
+        tableEnrollments.setRowHeight(30);
         tableEnrollments.setFont(UiUtil.REGULAR_FONT);
         tableEnrollments.getTableHeader().setFont(UiUtil.TITLE_FONT);
         tableEnrollments.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -78,33 +79,49 @@ public class MyEnrollmentsPanel extends JPanel {
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         tableEnrollments.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         tableEnrollments.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-        tableEnrollments.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+        tableEnrollments.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         tableEnrollments.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
         tableEnrollments.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
+        tableEnrollments.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
+
+        tableEnrollments.getColumnModel().getColumn(0).setPreferredWidth(100);
+        tableEnrollments.getColumnModel().getColumn(1).setPreferredWidth(85);
+        tableEnrollments.getColumnModel().getColumn(2).setPreferredWidth(220);
+        tableEnrollments.getColumnModel().getColumn(3).setPreferredWidth(65);
+        tableEnrollments.getColumnModel().getColumn(7).setPreferredWidth(140);
 
         JScrollPane scrollPane = new JScrollPane(tableEnrollments);
         add(scrollPane, BorderLayout.CENTER);
 
-        // 3. Bottom Action Bar
-        JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
+        // 3. Bottom Bar: Summary Footer + Actions
+        JPanel bottomContainer = new JPanel(new BorderLayout(15, 10));
+        bottomContainer.setBorder(new EmptyBorder(8, 4, 4, 4));
+
+        lblSummaryFooter = new JLabel("Tổng số môn: 0  |  Tổng số tín chỉ: 0 / 24 TC (Tối thiểu: 12 TC)");
+        lblSummaryFooter.setFont(UiUtil.TITLE_FONT);
+        lblSummaryFooter.setForeground(UiUtil.COLOR_NAVY);
+        bottomContainer.add(lblSummaryFooter, BorderLayout.WEST);
+
+        JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
 
         btnExportExcel = new JButton("Xuất Thời Khóa Biểu Ra Excel");
         btnExportExcel.setFont(UiUtil.TITLE_FONT);
         btnExportExcel.setBackground(new Color(30, 130, 76));
         btnExportExcel.setForeground(Color.WHITE);
-        btnExportExcel.setPreferredSize(new Dimension(240, 38));
+        btnExportExcel.setPreferredSize(new Dimension(240, 36));
         btnExportExcel.addActionListener(this::handleExportExcel);
         actionBar.add(btnExportExcel);
 
         btnCancel = new JButton("HỦY ĐĂNG KÝ HỌC PHẦN ĐÃ CHỌN");
         btnCancel.setFont(UiUtil.TITLE_FONT);
-        btnCancel.setBackground(UiUtil.DANGER_COLOR);
+        btnCancel.setBackground(UiUtil.COLOR_DANGER_RED);
         btnCancel.setForeground(Color.WHITE);
-        btnCancel.setPreferredSize(new Dimension(260, 38));
+        btnCancel.setPreferredSize(new Dimension(260, 36));
         btnCancel.addActionListener(this::handleCancel);
         actionBar.add(btnCancel);
 
-        add(actionBar, BorderLayout.SOUTH);
+        bottomContainer.add(actionBar, BorderLayout.EAST);
+        add(bottomContainer, BorderLayout.SOUTH);
 
         // Note: Initial data load is handled by MainFrame.syncEnrollmentsAndSchedule()
     }
@@ -139,20 +156,38 @@ public class MyEnrollmentsPanel extends JPanel {
         currentEnrollments.clear();
         tableModel.setRowCount(0);
 
+        int totalCredits = 0;
         if (list != null) {
             currentEnrollments.addAll(list);
             for (EnrollmentDetailDto item : list) {
+                totalCredits += item.getCredits();
                 String regTime = item.getRegisteredAt() != null ? item.getRegisteredAt().format(formatter) : "N/A";
                 tableModel.addRow(new Object[]{
                         item.getCourseId(),
                         item.getSubjectCode(),
                         item.getCourseName(),
+                        item.getCredits(),
                         item.getLecturerName(),
                         item.getScheduleDisplay(),
                         item.getRoom(),
                         regTime
                 });
             }
+        }
+
+        int courseCount = currentEnrollments.size();
+        if (totalCredits < 12) {
+            lblSummaryFooter.setText(String.format("⚠️ Tổng số môn: %d  |  Tổng số tín chỉ: %d / 24 TC (Chưa đủ tối thiểu 12 TC)",
+                    courseCount, totalCredits));
+            lblSummaryFooter.setForeground(UiUtil.COLOR_WARNING_AMBER);
+        } else if (totalCredits <= 24) {
+            lblSummaryFooter.setText(String.format("✅ Tổng số môn: %d  |  Tổng số tín chỉ: %d / 24 TC (Hợp lệ)",
+                    courseCount, totalCredits));
+            lblSummaryFooter.setForeground(UiUtil.COLOR_SUCCESS_GREEN);
+        } else {
+            lblSummaryFooter.setText(String.format("❌ Tổng số môn: %d  |  Tổng số tín chỉ: %d / 24 TC (Vượt quá 24 TC)",
+                    courseCount, totalCredits));
+            lblSummaryFooter.setForeground(UiUtil.COLOR_DANGER_RED);
         }
     }
 
@@ -211,6 +246,16 @@ public class MyEnrollmentsPanel extends JPanel {
         if (currentEnrollments.isEmpty()) {
             UiUtil.showWarning(this, "Bạn chưa đăng ký môn học nào để xuất thời khóa biểu.", "Danh sách trống");
             return;
+        }
+
+        int totalCredits = currentEnrollments.stream().mapToInt(EnrollmentDetailDto::getCredits).sum();
+        if (totalCredits < 12) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    String.format("CẢNH BÁO TÍN CHỈ:\nBạn mới đăng ký %d / 12 tín chỉ tối thiểu theo quy chế đào tạo.\nBạn có chắc chắn muốn xuất thời khóa biểu này ra file Excel không?", totalCredits),
+                    "Chưa đạt tín chỉ tối thiểu", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
         }
 
         String studentId = ClientState.getInstance().getCurrentUser() != null ?

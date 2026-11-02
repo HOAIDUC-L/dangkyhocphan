@@ -1,5 +1,6 @@
 /home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/exception/DatabaseException.java
 /home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/config/ServerConfig.java
+/home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/exception/CreditLimitExceededException.java
 /home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/exception/AuthenticationException.java
 /home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/database/DatabaseManager.java
 /home/hduc/Documents/GiuaKyM-main/server/src/main/java/com/course/server/service/AdminService.java

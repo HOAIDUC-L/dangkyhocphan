@@ -30,7 +30,7 @@ public class CourseRepository {
 
     public List<Course> findAll() {
         String sql = "SELECT course_id, subject_code, course_name, lecturer_name, " +
-                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, created_at " +
+                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, credits, created_at " +
                      "FROM courses ORDER BY day_of_week ASC, start_period ASC, course_id ASC";
         List<Course> list = new ArrayList<>();
         try (Connection conn = dbManager.getConnection();
@@ -53,7 +53,7 @@ public class CourseRepository {
 
         String pattern = "%" + keyword.trim().toLowerCase() + "%";
         StringBuilder sql = new StringBuilder("SELECT course_id, subject_code, course_name, lecturer_name, ")
-                .append("day_of_week, start_period, end_period, room, max_slots, remaining_slots, created_at ")
+                .append("day_of_week, start_period, end_period, room, max_slots, remaining_slots, credits, created_at ")
                 .append("FROM courses WHERE ");
 
         switch (searchType) {
@@ -100,7 +100,7 @@ public class CourseRepository {
 
     public Optional<Course> findById(String courseId) {
         String sql = "SELECT course_id, subject_code, course_name, lecturer_name, " +
-                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, created_at " +
+                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, credits, created_at " +
                      "FROM courses WHERE course_id = ?";
         try (Connection conn = dbManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -123,7 +123,7 @@ public class CourseRepository {
      */
     public Optional<Course> findByIdForUpdate(Connection conn, String courseId) throws SQLException {
         String sql = "SELECT course_id, subject_code, course_name, lecturer_name, " +
-                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, created_at " +
+                     "day_of_week, start_period, end_period, room, max_slots, remaining_slots, credits, created_at " +
                      "FROM courses WHERE course_id = ? FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, courseId);
@@ -151,6 +151,15 @@ public class CourseRepository {
 
     private Course mapRowToCourse(ResultSet rs) throws SQLException {
         Timestamp ts = rs.getTimestamp("created_at");
+        int credits = 3;
+        try {
+            credits = rs.getInt("credits");
+            if (credits <= 0) {
+                credits = 3;
+            }
+        } catch (SQLException ignored) {
+            credits = 3;
+        }
         return new Course(
                 rs.getString("course_id"),
                 rs.getString("subject_code"),
@@ -162,6 +171,7 @@ public class CourseRepository {
                 rs.getString("room"),
                 rs.getInt("max_slots"),
                 rs.getInt("remaining_slots"),
+                credits,
                 ts != null ? ts.toLocalDateTime() : null
         );
     }

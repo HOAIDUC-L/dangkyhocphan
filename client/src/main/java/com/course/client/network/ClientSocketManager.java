@@ -169,6 +169,18 @@ public class ClientSocketManager {
                 }
             }
             disconnect();
+        } else if (action == Action.ANNOUNCEMENT_PUSH) {
+            com.course.common.dto.AnnouncementDto dto = response.getDataAs(com.course.common.dto.AnnouncementDto.class);
+            if (dto != null) {
+                LOGGER.info(String.format("Received broadcast ANNOUNCEMENT_PUSH: [%s] %s", dto.getLevel(), dto.getTitle()));
+                for (ServerPushListener listener : pushListeners) {
+                    try {
+                        listener.onAnnouncement(dto);
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Error in pushListener onAnnouncement", e);
+                    }
+                }
+            }
         } else if (action == Action.PONG) {
             LOGGER.fine("Heartbeat PONG received from server.");
         }

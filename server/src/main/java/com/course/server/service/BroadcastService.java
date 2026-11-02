@@ -36,6 +36,16 @@ public class BroadcastService {
     }
 
     /**
+     * Broadcasts emergency announcement to ALL local clients connected to this node.
+     */
+    public void notifyAnnouncementLocal(com.course.common.dto.AnnouncementDto dto) {
+        LOGGER.info(String.format("[%s] Broadcasting ANNOUNCEMENT_PUSH: [%s] %s",
+                com.course.server.config.ServerConfig.getInstance().getNodeName(), dto.getLevel(), dto.getTitle()));
+        Response pushResponse = Response.push(Action.ANNOUNCEMENT_PUSH, dto);
+        sessionManager.broadcast(pushResponse);
+    }
+
+    /**
      * Legacy / Direct local broadcast wrapper.
      */
     public void notifyCourseUpdated(String courseId, int remainingSlots) {

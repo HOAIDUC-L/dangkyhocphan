@@ -29,6 +29,7 @@ com/course/server/network/PostgresNotificationListener.class
 com/course/server/ServerContext.class
 com/course/server/exception/CourseFullException.class
 com/course/server/exception/EnrollmentNotFoundException.class
+com/course/server/ui/AdminDashboardFrame$7.class
 com/course/server/ui/AdminDashboardFrame$1.class
 com/course/server/service/EnrollmentService.class
 com/course/server/network/ProtocolHandler$CourseDelegate.class
@@ -38,5 +39,6 @@ com/course/server/ServerApplication.class
 com/course/server/exception/AuthenticationException.class
 com/course/server/database/DatabaseManager.class
 com/course/server/repository/EnrollmentRepository.class
+com/course/server/exception/CreditLimitExceededException.class
 com/course/server/ui/AdminDashboardFrame$4.class
 com/course/server/session/ClientSession.class

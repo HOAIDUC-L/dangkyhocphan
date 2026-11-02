@@ -67,9 +67,10 @@ public class CoursePanel extends JPanel implements ServerPushListener {
         add(searchBar, BorderLayout.NORTH);
 
         // 2. Center Table
+        // 2. Center Table
         String[] columnNames = {
-                "Mã lớp HP", "Mã môn", "Tên môn học", "Giảng viên",
-                "Thứ", "Tiết BĐ", "Tiết KT", "Phòng", "Tổng số", "Còn lại"
+                "Mã lớp HP", "Mã môn", "Tên môn học", "Số TC", "Giảng viên",
+                "Thứ", "Tiết BĐ", "Tiết KT", "Phòng", "Tổng số", "Slot còn lại"
         };
 
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -80,43 +81,62 @@ public class CoursePanel extends JPanel implements ServerPushListener {
         };
 
         tableCourses = new JTable(tableModel);
-        tableCourses.setRowHeight(28);
+        tableCourses.setRowHeight(30);
         tableCourses.setFont(UiUtil.REGULAR_FONT);
         tableCourses.getTableHeader().setFont(UiUtil.TITLE_FONT);
         tableCourses.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Custom renderer for slot column (highlight full course)
+        // Custom renderer for slot column (badges for full / low / available slots)
         DefaultTableCellRenderer slotRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 setHorizontalAlignment(SwingConstants.CENTER);
-                if (value instanceof Number && ((Number) value).intValue() <= 0) {
-                    setText("Hết chỗ (0)");
-                    if (isSelected) {
-                        setForeground(table.getSelectionForeground());
-                        setBackground(table.getSelectionBackground());
+                if (value instanceof Number) {
+                    int remaining = ((Number) value).intValue();
+                    if (remaining <= 0) {
+                        setText("● HẾT CHỖ (0)");
+                        setFont(UiUtil.TITLE_FONT);
+                        if (!isSelected) {
+                            setForeground(UiUtil.COLOR_DANGER_RED);
+                        }
+                    } else if (remaining <= 5) {
+                        setText("⚡ Chỉ còn " + remaining + " chỗ!");
+                        setFont(UiUtil.TITLE_FONT);
+                        if (!isSelected) {
+                            setForeground(UiUtil.COLOR_WARNING_AMBER);
+                        }
                     } else {
-                        setForeground(UiUtil.DANGER_COLOR);
+                        setText(remaining + " chỗ");
+                        setFont(UiUtil.REGULAR_FONT);
+                        if (!isSelected) {
+                            setForeground(UiUtil.COLOR_SUCCESS_GREEN);
+                        }
                     }
-                    setFont(UiUtil.TITLE_FONT);
-                } else {
-                    setForeground(isSelected ? table.getSelectionForeground() : UiUtil.SUCCESS_COLOR);
-                    setFont(UiUtil.REGULAR_FONT);
                 }
                 return c;
             }
         };
-        tableCourses.getColumnModel().getColumn(9).setCellRenderer(slotRenderer);
+        tableCourses.getColumnModel().getColumn(10).setCellRenderer(slotRenderer);
 
-        // Center day and periods
+        // Center renderers
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        tableCourses.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+        tableCourses.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        tableCourses.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        tableCourses.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
         tableCourses.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
         tableCourses.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
         tableCourses.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
         tableCourses.getColumnModel().getColumn(8).setCellRenderer(centerRenderer);
+        tableCourses.getColumnModel().getColumn(9).setCellRenderer(centerRenderer);
+
+        // Column widths
+        tableCourses.getColumnModel().getColumn(0).setPreferredWidth(100);
+        tableCourses.getColumnModel().getColumn(1).setPreferredWidth(85);
+        tableCourses.getColumnModel().getColumn(2).setPreferredWidth(210);
+        tableCourses.getColumnModel().getColumn(3).setPreferredWidth(65);
+        tableCourses.getColumnModel().getColumn(10).setPreferredWidth(130);
 
         JScrollPane scrollPane = new JScrollPane(tableCourses);
         add(scrollPane, BorderLayout.CENTER);
@@ -125,7 +145,7 @@ public class CoursePanel extends JPanel implements ServerPushListener {
         JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 8));
         btnRegister = new JButton("ĐĂNG KÝ HỌC PHẦN ĐÃ CHỌN");
         btnRegister.setFont(UiUtil.TITLE_FONT);
-        btnRegister.setBackground(UiUtil.SUCCESS_COLOR);
+        btnRegister.setBackground(UiUtil.COLOR_SUCCESS_GREEN);
         btnRegister.setForeground(Color.WHITE);
         btnRegister.setPreferredSize(new Dimension(260, 38));
         btnRegister.addActionListener(this::handleRegister);
@@ -204,6 +224,7 @@ public class CoursePanel extends JPanel implements ServerPushListener {
                         c.getCourseId(),
                         c.getSubjectCode(),
                         c.getCourseName(),
+                        c.getCredits(),
                         c.getLecturerName(),
                         AppConstants.getDayName(c.getDayOfWeek()),
                         c.getStartPeriod(),
@@ -225,7 +246,18 @@ public class CoursePanel extends JPanel implements ServerPushListener {
 
         String courseId = (String) tableModel.getValueAt(selectedRow, 0);
         String courseName = (String) tableModel.getValueAt(selectedRow, 2);
-        int remaining = (int) tableModel.getValueAt(selectedRow, 9);
+        int credits = (int) tableModel.getValueAt(selectedRow, 3);
+        int remaining = (int) tableModel.getValueAt(selectedRow, 10);
+
+        // Pre-check 24 credit semester limit on Client-side
+        int currentCredits = com.course.client.state.ClientState.getInstance().getTotalEnrolledCredits();
+        if (currentCredits + credits > 24) {
+            UiUtil.showError(this,
+                    String.format("Không thể đăng ký: Tổng số tín chỉ sẽ là %d TC, vượt quá giới hạn tối đa 24 TC cho phép!\n(Hiện có: %d TC + Môn này: %d TC)",
+                            currentCredits + credits, currentCredits, credits),
+                    "Vượt quá giới hạn tín chỉ (24 TC)");
+            return;
+        }
 
         if (remaining <= 0) {
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -250,7 +282,7 @@ public class CoursePanel extends JPanel implements ServerPushListener {
                     Response response = get();
                     if (response.isSuccess()) {
                         UiUtil.showInfo(CoursePanel.this,
-                                "Đăng ký thành công lớp học phần: " + courseName + " (" + courseId + ")",
+                                "Đăng ký thành công lớp học phần: " + courseName + " (" + courseId + ") - " + credits + " TC",
                                 "Đăng ký thành công");
                         if (onEnrollmentChanged != null) {
                             onEnrollmentChanged.run();
@@ -277,7 +309,7 @@ public class CoursePanel extends JPanel implements ServerPushListener {
         SwingUtilities.invokeLater(() -> {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 if (courseId.equals(tableModel.getValueAt(i, 0))) {
-                    tableModel.setValueAt(remainingSlots, i, 9);
+                    tableModel.setValueAt(remainingSlots, i, 10);
                     break;
                 }
             }
